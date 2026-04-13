@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADR Timeline Expert PRO</title>
+    <title>ADR Timeline Expert PRO+</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -13,7 +13,7 @@
         .container { max-width: 1000px; margin: auto; }
         .card { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        h2, h3 { margin-top: 0; color: #0f172a; border-left: 4px solid var(--primary); padding-left: 10px; }
+        h2, h3, h4 { margin-top: 0; color: #0f172a; border-left: 4px solid var(--primary); padding-left: 10px; }
         input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
         button { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; margin-top: 10px; }
         .btn-main { background: var(--primary); color: white; width: 100%; }
@@ -23,6 +23,11 @@
         
         canvas { width: 100%; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 15px; }
         
+        /* สไตล์ใหม่สำหรับส่วนแสดงผลด้านล่าง (ตามรูป) */
+        .summary-section { margin-top: 25px; border-top: 1px dashed #cbd5e1; padding-top: 20px; }
+        .adr-summary-item { color: var(--danger); font-size: 14px; margin-bottom: 5px; }
+        .p-note-box { background: #f1f5f9; padding: 15px; border-radius: 8px; font-size: 14px; color: #334155; border-left: 4px solid #94a3b8; }
+
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto; }
         .modal-content { background: #fff; padding: 30px; margin: 2% auto; width: 90%; max-width: 700px; border-radius: 15px; }
         .q-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
@@ -54,7 +59,7 @@
         <h3>2. เพิ่มประวัติการใช้ยา</h3>
         <div class="grid">
             <input id="drugName" placeholder="ชื่อยา">
-            <input id="drugDose" placeholder="ขนาดยา (e.g. 500mg tid)">
+            <input id="drugDose" placeholder="ขนาดยา (e.g. 1g IV q 8hr)">
             <div>
                 <label style="font-size: 12px;">วันที่เริ่ม</label>
                 <input type="date" id="start">
@@ -64,27 +69,40 @@
                 <input type="date" id="end">
             </div>
         </div>
-        <label><input type="checkbox" id="ongoing"> ยังใช้อยู่ในปัจจุบัน</label><br>
+        <label><input type="checkbox" id="ongoing"> ยังใช้อยู่ในปัจจุบัน (Ongoing)</label><br>
         <button class="btn-main" onclick="addDrug()">➕ เพิ่มรายการยา</button>
     </div>
 
     <div class="card no-print">
         <h3>3. ระบุเหตุการณ์ไม่พึงประสงค์ (ADR)</h3>
         <div class="grid">
-            <input id="adr" placeholder="อาการที่พบ (เช่น ผื่นแพ้ยา, ตับอักเสบ)">
+            <input id="adr" placeholder="อาการที่พบ (เช่น ผื่นแพ้ยา, MP Rash)">
             <input type="date" id="adrDate">
         </div>
         <button class="btn-danger" onclick="addADR()">🚩 เพิ่มเหตุการณ์ ADR</button>
     </div>
 
     <div class="card">
-        <h3>4. แผนภาพ Timeline</h3>
-        <canvas id="cv" width="800" height="300"></canvas>
-        <p style="font-size: 12px; color: #666;">* สีส้ม: ช่วงเวลาที่มีความสัมพันธ์กับการเกิด ADR</p>
+        <h3>4. แผนภาพ Timeline (ตามรูปแบบรูปถ่าย)</h3>
+        <canvas id="cv" width="1000" height="400"></canvas>
+        <p style="font-size: 12px; color: #666;">* วงกลม: จุดเริ่ม/หยุดยา | ลูกศร: กำลังใช้อยู่ | เส้นแดงประ: วันที่เกิด ADR</p>
     </div>
 
-    <div class="card">
-        <h3>5. การประเมินความสัมพันธ์ (Algorithm)</h3>
+    <div class="card summary-section">
+        <h4 style="color:var(--danger);">สรุปลำดับเหตุการณ์อาการไม่พึงประสงค์ (ADR):</h4>
+        <div id="adrSummaryList">
+            <p style="color:#666; font-size:14px;">(ยังไม่มีข้อมูล ADR)</p>
+        </div>
+        
+        <h4 style="margin-top:20px;">Pharmacist Note / Plan:</h4>
+        <textarea id="pNoteInput" class="no-print" rows="3" placeholder="เขียนบันทึกความเห็นที่นี่... (จะไปแสดงในรายงานด้านล่าง)"></textarea>
+        <div id="pNoteDisplay" class="p-note-box print-only" style="margin-top:10px;">
+            (ยังไม่มีบันทึก)
+        </div>
+    </div>
+
+    <div class="card no-print">
+        <h3>5. การประเมินความสัมพันธ์ (Naranjo)</h3>
         <div id="assessmentResult" style="padding: 10px; background: #eff6ff; border-radius: 8px;">
             ยังไม่มีการประเมิน Naranjo Score
         </div>
@@ -108,23 +126,18 @@
 
 <script>
 let drugs = [], adrs = [];
-const qText = [
-    "มีรายงานที่น่าเชื่อถือเกี่ยวกับอาการนี้มาก่อนหรือไม่?",
-    "อาการเกิดขึ้นหลังจากได้รับยาที่ต้องสงสัยหรือไม่?",
-    "อาการดีขึ้นเมื่อหยุดยา หรือได้รับยาต้านเฉพาะ (Antagonist) หรือไม่?",
-    "อาการกลับเป็นซ้ำเมื่อได้รับยาเดิมเข้าไปใหม่หรือไม่?",
-    "มีสาเหตุอื่นที่ทำให้เกิดอาการนี้ได้หรือไม่?",
-    "อาการเกิดซ้ำเมื่อให้ยาหลอก (Placebo) หรือไม่?",
-    "พบระดับยาในเลือดถึงระดับที่มีพิษหรือไม่?",
-    "อาการรุนแรงขึ้นเมื่อเพิ่มขนาด หรือลดลงเมื่อลดขนาดหรือไม่?",
-    "ผู้ป่วยเคยมีอาการคล้ายกันเมื่อสัมผัสยาชนิดเดียวกันในครั้งก่อนหรือไม่?",
-    "มีหลักฐานยืนยันอาการไม่พึงประสงค์ด้วยวัตถุพยานอื่นหรือไม่?"
-];
-const qWeights = [1, 2, 1, 2, -1, -1, 1, 1, 1, 1];
+const qText = ["มีรายงานที่น่าเชื่อถือเกี่ยวกับอาการนี้มาก่อนหรือไม่?", "อาการเกิดขึ้นหลังจากได้รับยาที่ต้องสงสัยหรือไม่?", "อาการดีขึ้นเมื่อหยุดยา หรือได้รับยาต้านเฉพาะหรือไม่?", "อาการกลับเป็นซ้ำเมื่อได้รับยาเดิมเข้าไปใหม่หรือไม่?", "มีสาเหตุอื่นที่ทำให้เกิดอาการนี้ได้หรือไม่?", "อาการเกิดซ้ำเมื่อให้ยาหลอกหรือไม่?", "พบระดับยาในเลือดถึงระดับที่มีพิษหรือไม่?", "อาการรุนแรงขึ้นเมื่อเพิ่มขนาด หรือลดลงเมื่อลดขนาดหรือไม่?", "ผู้ป่วยเคยมีอาการคล้ายกันเมื่อสัมผัสยาชนิดเดียวกันหรือไม่?", "มีหลักฐานยืนยันอาการไม่พึงประสงค์ด้วยวัตถุพยานอื่นหรือไม่?"];
 
 window.onload = () => {
     document.getElementById('hospital').value = localStorage.getItem('h') || '';
     initNaranjo();
+    
+    // Sync Pharmacist Note
+    const pNoteInput = document.getElementById('pNoteInput');
+    const pNoteDisplay = document.getElementById('pNoteDisplay');
+    pNoteInput.addEventListener('input', () => {
+        pNoteDisplay.innerText = pNoteInput.value || '(ยังไม่มีบันทึก)';
+    });
 }
 
 function saveH() { localStorage.setItem('h', document.getElementById('hospital').value); }
@@ -134,6 +147,7 @@ function addDrug() {
         name: document.getElementById('drugName').value,
         dose: document.getElementById('drugDose').value,
         start: document.getElementById('start').value,
+        // If ongoing, end is today. If not, end is the input date.
         end: document.getElementById('ongoing').checked ? new Date().toISOString().split('T')[0] : document.getElementById('end').value,
         ongoing: document.getElementById('ongoing').checked
     };
@@ -146,7 +160,20 @@ function addADR() {
     const a = { name: document.getElementById('adr').value, date: document.getElementById('adrDate').value };
     if(!a.name || !a.date) return alert("กรุณาระบุอาการและวันที่เกิด");
     adrs.push(a);
+    updateAdrSummary();
     draw();
+}
+
+function updateAdrSummary() {
+    const summaryList = document.getElementById('adrSummaryList');
+    summaryList.innerHTML = '';
+    if(adrs.length === 0) { summaryList.innerHTML = '<p style="color:#666; font-size:14px;">(ยังไม่มีข้อมูล ADR)</p>'; return; }
+    
+    adrs.forEach((a, i) => {
+        const dateObj = new Date(a.date);
+        const formattedDate = `${dateObj.getDate()}/${dateObj.getMonth()+1}/${String(dateObj.getFullYear()).slice(-2)}`;
+        summaryList.innerHTML += `<div class="adr-summary-item"><b>R${i+1}:</b> ${a.name} (${formattedDate})</div>`;
+    });
 }
 
 function draw() {
@@ -156,122 +183,112 @@ function draw() {
     
     if (drugs.length === 0 && adrs.length === 0) return;
 
+    // คำนวณขอบเขตวันที่
     let allDates = [];
-    drugs.forEach(d => { allDates.push(new Date(d.start)); if(d.end) allDates.push(new Date(d.end)); });
+    drugs.forEach(d => { 
+        allDates.push(new Date(d.start)); 
+        if(d.end) allDates.push(new Date(d.end)); 
+        else if(d.ongoing) allDates.push(new Date()); // เผื่อกรณี ongoing แต่ไม่มี end date
+    });
     adrs.forEach(a => allDates.push(new Date(a.date)));
     
     let minDate = new Date(Math.min(...allDates));
     let maxDate = new Date(Math.max(...allDates));
-    minDate.setDate(minDate.getDate() - 2);
-    maxDate.setDate(maxDate.getDate() + 2);
+    minDate.setDate(minDate.getDate() - 2); // เผื่อขอบซ้าย
+    maxDate.setDate(maxDate.getDate() + 2); // เผื่อขอบขวา
 
-    const margin = 120;
-    const chartWidth = canvas.width - margin - 50;
+    const marginL = 180; // เพิ่มพื้นที่ด้านซ้ายสำหรับชื่อยา
+    const marginR = 50;
+    const chartWidth = canvas.width - marginL - marginR;
+    const chartHeight = canvas.height - 60; // เผื่อด้านล่างสำหรับ R1, R2
 
-    function getX(date) {
-        return margin + ((new Date(date) - minDate) / (maxDate - minDate)) * chartWidth;
+    function getX(dateStr) {
+        if(!dateStr) return marginL;
+        return marginL + ((new Date(dateStr) - minDate) / (maxDate - minDate)) * chartWidth;
     }
 
-    // Draw Drugs
-    drugs.forEach((d, i) => {
-        let y = 60 + i * 40;
-        let xStart = getX(d.start);
-        let xEnd = getX(d.end);
-        
-        // Highlight if ADR falls within drug period
-        let isSuspect = adrs.some(a => new Date(a.date) >= new Date(d.start) && new Date(a.date) <= new Date(d.end));
+    // --- วาดแกนวันที่ด้านบน ---
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.fillStyle = '#64748b';
+    ctx.font = '12px Sarabun';
+    let tempDate = new Date(minDate);
+    while(tempDate <= maxDate) {
+        let x = getX(tempDate);
+        ctx.beginPath(); ctx.moveTo(x, 40); ctx.lineTo(x, chartHeight + 40); ctx.stroke(); // เส้นตารางแนวตั้ง
+        // แสดงวันที่แบบ DD/MM
+        ctx.fillText(`${tempDate.getDate()}/${tempDate.getMonth()+1}`, x - 10, 30);
+        tempDate.setDate(tempDate.getDate() + 2); // แสดงทุก 2 วัน
+    }
 
-        ctx.fillStyle = isSuspect ? '#f97316' : '#3b82f6';
-        ctx.roundRect ? ctx.fillRoundRect(xStart, y, xEnd - xStart, 12, 5) : ctx.fillRect(xStart, y, xEnd - xStart, 12);
-        ctx.fill();
+    // --- วาดรายการยา (ตามรูปแบบในรูปถ่าย) ---
+    drugs.forEach((d, i) => {
+        let y = 80 + i * 35; // ระยะห่างแต่ละแถว
+        let xStart = getX(d.start);
+        let xEnd = d.ongoing ? getX(new Date()) : getX(d.end);
         
+        // 1. วาดชื่อยาด้านซ้าย
         ctx.fillStyle = '#1e293b';
-        ctx.font = 'bold 12px Sarabun';
-        ctx.fillText(d.name, 10, y + 10);
-        ctx.font = '10px Sarabun';
-        ctx.fillText(d.dose, xStart, y - 5);
+        ctx.textAlign = 'right';
+        ctx.font = 'bold 13px Sarabun';
+        ctx.fillText(d.name, marginL - 15, y + 5);
+        ctx.textAlign = 'left';
+
+        // 2. วาดเส้นยา (สีน้ำเงิน)
+        ctx.strokeStyle = '#2563eb';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(xStart, y); ctx.lineTo(xEnd, y); ctx.stroke();
+        
+        // 3. วาด Dose กำกับเหนือเส้น
+        if(d.dose) {
+            ctx.fillStyle = '#2563eb';
+            ctx.font = '10px Sarabun';
+            ctx.fillText(d.dose, xStart, y - 8);
+        }
+
+        // 4. วาดสัญลักษณ์ หัว-ท้าย (จุดวงกลม หรือ ลูกศร)
+        ctx.fillStyle = '#fff';
+        ctx.lineWidth = 2;
+        // จุดเริ่ม
+        ctx.beginPath(); ctx.arc(xStart, y, 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        
+        if(d.ongoing) {
+            // วาดลูกศรสำหรับ Ongoing
+            ctx.fillStyle = '#2563eb';
+            ctx.beginPath(); ctx.moveTo(xEnd, y); ctx.lineTo(xEnd - 10, y - 5); ctx.lineTo(xEnd - 10, y + 5); ctx.fill();
+        } else {
+            // จุดจบ (วงกลม)
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.arc(xEnd, y, 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        }
     });
 
-    // Draw ADR lines
+    // --- วาดแกน ADR (ตามรูปแบบในรูปถ่าย) ---
     adrs.forEach((a, i) => {
         let x = getX(a.date);
+        // 1. วาดเส้นประแนวตั้ง (สีแดง)
         ctx.strokeStyle = '#dc2626';
         ctx.setLineDash([5, 3]);
-        ctx.beginPath();
-        ctx.moveTo(x, 20);
-        ctx.lineTo(x, canvas.height - 30);
-        ctx.stroke();
-        ctx.setLineDash([]);
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(x, 40); ctx.lineTo(x, chartHeight + 40); ctx.stroke();
+        ctx.setLineDash([]); // รีเซ็ตเส้นประ
         
+        // 2. วาดรหัส ADR (R1, R2) ด้านล่าง
         ctx.fillStyle = '#dc2626';
         ctx.font = 'bold 12px Sarabun';
-        ctx.fillText('⚡ ' + a.name, x - 20, 15);
-        ctx.fillText(a.date, x - 30, canvas.height - 10);
+        ctx.textAlign = 'center';
+        ctx.fillText(`(R${i+1})`, x, chartHeight + 55);
+        ctx.textAlign = 'left';
     });
 }
 
-function initNaranjo() {
-    let html = '';
-    qText.forEach((q, i) => {
-        html += `<div class="q-row">
-            <span style="flex:1; font-size:14px;">${i+1}. ${q}</span>
-            <select id="n${i}" onchange="calcNaranjo()">
-                <option value="0">ไม่ทราบ (0)</option>
-                <option value="1">ใช่</option>
-                <option value="-1">ไม่ใช่</option>
-            </select>
-        </div>`;
-    });
-    document.getElementById('questions').innerHTML = html;
-}
-
-function calcNaranjo() {
-    let score = 0;
-    qText.forEach((_, i) => {
-        let val = parseInt(document.getElementById('n' + i).value);
-        if(val === 1) score += (qWeights[i] > 0 ? qWeights[i] : 1);
-        else if(val === -1) score += (qWeights[i] < 0 ? Math.abs(qWeights[i]) : 0);
-        // Note: simplified logic for example, usually Yes/No/Unknown have fixed points per Q
-    });
-
-    // Standard Naranjo Scoring
-    let total = 0;
-    const scores = [
-        [1, 0, 0], [2, -1, 0], [1, 0, 0], [2, -1, 0], [-1, 2, 0],
-        [-1, 1, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0]
-    ];
-    
-    qText.forEach((_, i) => {
-        let v = document.getElementById('n' + i).value;
-        if(v == "1") total += scores[i][0];
-        else if(v == "-1") total += scores[i][1];
-        else total += scores[i][2];
-    });
-
-    let level = "Doubtful";
-    if (total >= 9) level = "Definite (แน่นอน)";
-    else if (total >= 5) level = "Probable (น่าจะใช่)";
-    else if (total >= 1) level = "Possible (อาจจะใช่)";
-
-    document.getElementById('score').innerText = 'คะแนนรวม: ' + total;
-    document.getElementById('level').innerText = 'ระดับความต่อเนื่อง: ' + level;
-    document.getElementById('assessmentResult').innerHTML = `<b>Naranjo Score: ${total}</b> - ผลลัพธ์: ${level}`;
-}
-
+// --- ฟังก์ชัน Naranjo เหมือนเดิม ---
+function initNaranjo() { let html = ''; qText.forEach((q, i) => { html += `<div class="q-row"><span style="flex:1; font-size:14px;">${i+1}. ${q}</span><select id="n${i}" onchange="calcNaranjo()"><option value="0">ไม่ทราบ (0)</option><option value="1">ใช่</option><option value="-1">ไม่ใช่</option></select></div>`; }); document.getElementById('questions').innerHTML = html; }
+function calcNaranjo() { let total = 0; const scores = [[1, 0, 0], [2, -1, 0], [1, 0, 0], [2, -1, 0], [-1, 2, 0], [-1, 1, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0]]; qText.forEach((_, i) => { let v = document.getElementById('n' + i).value; if(v == "1") total += scores[i][0]; else if(v == "-1") total += scores[i][1]; else total += scores[i][2]; }); let level = "Doubtful"; if (total >= 9) level = "Definite (แน่นอน)"; else if (total >= 5) level = "Probable (น่าจะใช่)"; else if (total >= 1) level = "Possible (อาจจะใช่)"; document.getElementById('score').innerText = 'คะแนนรวม: ' + total; document.getElementById('level').innerText = 'ระดับ: ' + level; document.getElementById('assessmentResult').innerHTML = `<b>Naranjo Score: ${total}</b> - ผลลัพธ์: ${level}`; }
 function openNaranjo() { document.getElementById('nModal').style.display = 'block'; }
 function closeNaranjo() { document.getElementById('nModal').style.display = 'none'; }
 
-async function exportPDF() {
-    const { jsPDF } = window.jspdf;
-    const canvas = await html2canvas(document.querySelector("#printArea"));
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgProps = pdf.getImageProperties(imgData);
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`ADR_Report_${new Date().getTime()}.pdf`);
-}
+// --- ฟังก์ชัน PDF เหมือนเดิม ---
+async function exportPDF() { const { jsPDF } = window.jspdf; const canvas = await html2canvas(document.querySelector("#printArea")); const imgData = canvas.toDataURL('image/png'); const pdf = new jsPDF('p', 'mm', 'a4'); const imgProps = pdf.getImageProperties(imgData); const pdfWidth = pdf.internal.pageSize.getWidth(); const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width; pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight); pdf.save(`ADR_Report_${new Date().getTime()}.pdf`); }
 </script>
 </body>
 </html>
